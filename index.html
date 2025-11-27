@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <title>Romulus és Remus – három szintű játék</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #e9f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .game-wrapper {
+      max-width: 1050px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 20px 24px 26px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 26px;
+      text-align: center;
+    }
+
+    .subtitle-global {
+      text-align: center;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .level-selector {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .level-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 600;
+      background: #f0f0f0;
+      color: #555;
+      transition: background 0.15s, transform 0.05s;
+    }
+
+    .level-btn.active {
+      background: linear-gradient(135deg, #26c281, #16a085);
+      color: #fff;
+    }
+
+    .level-btn:active {
+      transform: translateY(1px);
+    }
+
+    .level {
+      display: none;
+    }
+
+    .level.active-level {
+      display: block;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #555;
+      margin: 4px 0 14px;
+      text-align: center;
+    }
+
+    .board-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .player {
+      width: 80px;
+      text-align: center;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .player .avatar {
+      font-size: 42px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .player.left .avatar {
+      transform: scaleX(-1);
+    }
+
+    .rope-panel {
+      flex: 1;
+      padding: 10px 16px 16px;
+      border-radius: 16px;
+      background: linear-gradient(to top, #f5f5f5, #ffffff);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .rope {
+      position: absolute;
+      top: 36%;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: repeating-linear-gradient(
+        90deg,
+        #d39b62 0px,
+        #d39b62 16px,
+        #c1813b 16px,
+        #c1813b 32px
+      );
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+    }
+
+    .numberline {
+      position: relative;
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(21, 1fr);
+      gap: 2px;
+    }
+
+    .cell {
+      position: relative;
+      height: 48px;
+      background: #f0dcc0;
+      border-radius: 6px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      font-size: 11px;
+      color: #5b3a1a;
+      user-select: none;
+    }
+
+    .cell span.value {
+      margin-bottom: 2px;
+    }
+
+    .cell.zero {
+      background: #ffe9a9;
+      box-shadow: 0 0 0 2px #f6c453 inset;
+      font-weight: 600;
+    }
+
+    .cell.blue {
+      background: linear-gradient(#5aa7ff, #1e5fd1);
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .cell.red {
+      background: linear-gradient(#ff6b6b, #c62323);
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .cell.clickable {
+      cursor: pointer;
+    }
+
+    .cell.clickable:hover {
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.15) inset;
+    }
+
+    .pawn {
+      position: absolute;
+      top: -18px;
+      font-size: 28px;
+      transform: translateY(-6px);
+      filter: drop-shadow(0 3px 2px rgba(0,0,0,0.25));
+      pointer-events: none;
+      transition: transform 0.18s ease, left 0.18s ease;
+    }
+
+    .control-panel {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 2.4fr 1.6fr;
+      gap: 18px;
+    }
+
+    .dice-panel {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .dice-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dice {
+      width: 70px;
+      height: 70px;
+      border-radius: 16px;
+      background: radial-gradient(circle at 30% 30%, #ffffff, #e3e3e3);
+      box-shadow: 0 6px 10px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .dice-label {
+      font-size: 12px;
+      text-align: center;
+      max-width: 110px;
+      color: #555;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.07s ease, box-shadow 0.07s ease, background 0.2s;
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2) inset;
+    }
+
+    .btn-roll {
+      background: linear-gradient(135deg, #26c281, #16a085);
+      color: #fff;
+      box-shadow: 0 4px 9px rgba(0,0,0,0.25);
+    }
+
+    .btn-reset {
+      background: #f1f1f1;
+      color: #444;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    }
+
+    .status-panel {
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: #f9fafc;
+      border: 1px solid #dde3ee;
+      font-size: 13px;
+    }
+
+    .status-main {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .status-small {
+      font-size: 12px;
+      color: #555;
+    }
+
+    .highlight-romulus {
+      color: #245cd6;
+    }
+
+    .highlight-remus {
+      color: #d62828;
+    }
+
+    @media (max-width: 900px) {
+      .board-area {
+        flex-direction: column;
+      }
+      .player {
+        display: none;
+      }
+      .control-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="game-wrapper">
+  <h1>Romulus és Remus – kötélhúzás</h1>
+  <div class="subtitle-global">
+    Válaszd ki a szintet: alap (automatikus lépés), középhaladó (jobbra/balra szöveg), haladó (lépjen +3 / –5)!
+  </div>
+
+  <div class="level-selector">
+    <button class="level-btn active" data-level="1">1. Alap szint</button>
+    <button class="level-btn" data-level="2">2. Középhaladó</button>
+    <button class="level-btn" data-level="3">3. Haladó</button>
+  </div>
+
+  <!-- 1. SZINT: automatikus lépés, eredeti logika -->
+  <div class="level active-level" id="level1">
+    <div class="subtitle">
+      Az alapjáték: a bábu <strong>magától lép</strong> a dobás után. A gyerekek figyelik, hogyan változik a helye.
+    </div>
+
+    <div class="board-area">
+      <div class="player left">
+        <span class="avatar">🧑‍🦱</span>
+        <strong>Romulus</strong><br>„Balra húzok!”
+      </div>
+
+      <div class="rope-panel">
+        <div class="rope"></div>
+        <div class="numberline" id="numberline1">
+          <div class="cell blue"><span class="value">-10</span></div>
+          <div class="cell"><span class="value">-9</span></div>
+          <div class="cell"><span class="value">-8</span></div>
+          <div class="cell"><span class="value">-7</span></div>
+          <div class="cell"><span class="value">-6</span></div>
+          <div class="cell"><span class="value">-5</span></div>
+          <div class="cell"><span class="value">-4</span></div>
+          <div class="cell"><span class="value">-3</span></div>
+          <div class="cell"><span class="value">-2</span></div>
+          <div class="cell"><span class="value">-1</span></div>
+          <div class="cell zero"><span class="value">0</span></div>
+          <div class="cell"><span class="value">1</span></div>
+          <div class="cell"><span class="value">2</span></div>
+          <div class="cell"><span class="value">3</span></div>
+          <div class="cell"><span class="value">4</span></div>
+          <div class="cell"><span class="value">5</span></div>
+          <div class="cell"><span class="value">6</span></div>
+          <div class="cell"><span class="value">7</span></div>
+          <div class="cell"><span class="value">8</span></div>
+          <div class="cell"><span class="value">9</span></div>
+          <div class="cell red"><span class="value">10</span></div>
+        </div>
+      </div>
+
+      <div class="player right">
+        <span class="avatar">🧑‍🦰</span>
+        <strong>Remus</strong><br>„Jobbra húzok!”
+      </div>
+    </div>
+
+    <div class="control-panel">
+      <div class="dice-panel">
+        <div class="dice-wrapper">
+          <div class="dice" id="dice-number1">?</div>
+          <div class="dice-label">Szabályos dobókocka<br>(lépésszám)</div>
+        </div>
+        <div class="dice-wrapper">
+          <div class="dice" id="dice-dir1">?</div>
+          <div class="dice-label">+ / – kocka<br>(irány)</div>
+        </div>
+        <div class="buttons">
+          <button class="btn-roll" id="rollBtn1">🎲 Dobj!</button>
+          <button class="btn-reset" id="resetBtn1">🔁 Új játék</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="status-panel">
+          <div class="status-main" id="status-main1">
+            Romulus kezd. Kattints a „Dobj!” gombra.
+          </div>
+          <div class="status-small" id="status-small1">
+            A bábu automatikusan a megfelelő mezőre ugrik.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. SZINT: húzd a bábut, szöveg: jobbra / balra lépjen 3-at -->
+  <div class="level" id="level2">
+    <div class="subtitle">
+      Középhaladó: dobás után <strong>a gyerek kattintson arra a mezőre</strong>,
+      ahová a bábu kerül. A feladat így jelenik meg: „lépjen jobbra 3-at” vagy „lépjen balra 5-öt”.
+    </div>
+
+    <div class="board-area">
+      <div class="player left">
+        <span class="avatar">🧑‍🦱</span>
+        <strong>Romulus</strong>
+      </div>
+
+      <div class="rope-panel">
+        <div class="rope"></div>
+        <div class="numberline" id="numberline2">
+          <div class="cell blue clickable" data-pos="-10"><span class="value">-10</span></div>
+          <div class="cell clickable" data-pos="-9"><span class="value">-9</span></div>
+          <div class="cell clickable" data-pos="-8"><span class="value">-8</span></div>
+          <div class="cell clickable" data-pos="-7"><span class="value">-7</span></div>
+          <div class="cell clickable" data-pos="-6"><span class="value">-6</span></div>
+          <div class="cell clickable" data-pos="-5"><span class="value">-5</span></div>
+          <div class="cell clickable" data-pos="-4"><span class="value">-4</span></div>
+          <div class="cell clickable" data-pos="-3"><span class="value">-3</span></div>
+          <div class="cell clickable" data-pos="-2"><span class="value">-2</span></div>
+          <div class="cell clickable" data-pos="-1"><span class="value">-1</span></div>
+          <div class="cell zero clickable" data-pos="0"><span class="value">0</span></div>
+          <div class="cell clickable" data-pos="1"><span class="value">1</span></div>
+          <div class="cell clickable" data-pos="2"><span class="value">2</span></div>
+          <div class="cell clickable" data-pos="3"><span class="value">3</span></div>
+          <div class="cell clickable" data-pos="4"><span class="value">4</span></div>
+          <div class="cell clickable" data-pos="5"><span class="value">5</span></div>
+          <div class="cell clickable" data-pos="6"><span class="value">6</span></div>
+          <div class="cell clickable" data-pos="7"><span class="value">7</span></div>
+          <div class="cell clickable" data-pos="8"><span class="value">8</span></div>
+          <div class="cell clickable" data-pos="9"><span class="value">9</span></div>
+          <div class="cell red clickable" data-pos="10"><span class="value">10</span></div>
+        </div>
+      </div>
+
+      <div class="player right">
+        <span class="avatar">🧑‍🦰</span>
+        <strong>Remus</strong>
+      </div>
+    </div>
+
+    <div class="control-panel">
+      <div class="dice-panel">
+        <div class="dice-wrapper">
+          <div class="dice" id="dice-number2">?</div>
+          <div class="dice-label">Szabályos dobókocka<br>(lépésszám)</div>
+        </div>
+        <div class="dice-wrapper">
+          <div class="dice" id="dice-dir2">?</div>
+          <div class="dice-label">+ / – kocka<br>(irány)</div>
+        </div>
+        <div class="buttons">
+          <button class="btn-roll" id="rollBtn2">🎲 Dobj!</button>
+          <button class="btn-reset" id="resetBtn2">🔁 Új játék</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="status-panel">
+          <div class="status-main" id="status-main2">
+            Romulus következik. Kattints a „Dobj!” gombra.
+          </div>
+          <div class="status-small" id="status-small2">
+            A feladat pl.: „lépjen jobbra 3-at” vagy „lépjen balra 5-öt”. Kattints a megfelelő mezőre!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. SZINT: húzd a bábut, szöveg: lépjen +3-at / lépjen –5-öt -->
+  <div class="level" id="level3">
+    <div class="subtitle">
+      Haladó: a feladat <strong>algebrai módon</strong> jelenik meg: „lépjen +3-at”, „lépjen –5-öt”.
+      A gyerekeknek a <em>pozitív és negatív irányt</em> is értelmezniük kell.
+    </div>
+
+    <div class="board-area">
+      <div class="player left">
+        <span class="avatar">🧑‍🦱</span>
+        <strong>Romulus</strong>
+      </div>
+
+      <div class="rope-panel">
+        <div class="rope"></div>
+        <div class="numberline" id="numberline3">
+          <div class="cell blue clickable" data-pos="-10"><span class="value">-10</span></div>
+          <div class="cell clickable" data-pos="-9"><span class="value">-9</span></div>
+          <div class="cell clickable" data-pos="-8"><span class="value">-8</span></div>
+          <div class="cell clickable" data-pos="-7"><span class="value">-7</span></div>
+          <div class="cell clickable" data-pos="-6"><span class="value">-6</span></div>
+          <div class="cell clickable" data-pos="-5"><span class="value">-5</span></div>
+          <div class="cell clickable" data-pos="-4"><span class="value">-4</span></div>
+          <div class="cell clickable" data-pos="-3"><span class="value">-3</span></div>
+          <div class="cell clickable" data-pos="-2"><span class="value">-2</span></div>
+          <div class="cell clickable" data-pos="-1"><span class="value">-1</span></div>
+          <div class="cell zero clickable" data-pos="0"><span class="value">0</span></div>
+          <div class="cell clickable" data-pos="1"><span class="value">1</span></div>
+          <div class="cell clickable" data-pos="2"><span class="value">2</span></div>
+          <div class="cell clickable" data-pos="3"><span class="value">3</span></div>
+          <div class="cell clickable" data-pos="4"><span class="value">4</span></div>
+          <div class="cell clickable" data-pos="5"><span class="value">5</span></div>
+          <div class="cell clickable" data-pos="6"><span class="value">6</span></div>
+          <div class="cell clickable" data-pos="7"><span class="value">7</span></div>
+          <div class="cell clickable" data-pos="8"><span class="value">8</span></div>
+          <div class="cell clickable" data-pos="9"><span class="value">9</span></div>
+          <div class="cell red clickable" data-pos="10"><span class="value">10</span></div>
+        </div>
+      </div>
+
+      <div class="player right">
+        <span class="avatar">🧑‍🦰</span>
+        <strong>Remus</strong>
+      </div>
+    </div>
+
+    <div class="control-panel">
+      <div class="dice-panel">
+        <div class="dice-wrapper">
+          <div class="dice" id="dice-number3">?</div>
+          <div class="dice-label">Szabályos dobókocka<br>(lépésszám)</div>
+        </div>
+        <div class="dice-wrapper">
+          <div class="dice" id="dice-dir3">?</div>
+          <div class="dice-label">+ / – kocka<br>(irány)</div>
+        </div>
+        <div class="buttons">
+          <button class="btn-roll" id="rollBtn3">🎲 Dobj!</button>
+          <button class="btn-reset" id="resetBtn3">🔁 Új játék</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="status-panel">
+          <div class="status-main" id="status-main3">
+            Romulus következik. Kattints a „Dobj!” gombra.
+          </div>
+          <div class="status-small" id="status-small3">
+            A feladat pl.: „lépjen +3-at” vagy „lépjen –4-et”. Kattints a megfelelő mezőre!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ===== SZINTVÁLASZTÓ ===== */
+  const levelButtons = document.querySelectorAll('.level-btn');
+  const levelDivs = document.querySelectorAll('.level');
+
+  levelButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lvl = btn.getAttribute('data-level');
+      levelButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      levelDivs.forEach(d => {
+        d.classList.toggle('active-level', d.id === 'level' + lvl);
+      });
+    });
+  });
+
+  /* ===== 1. SZINT – automatikus lépés ===== */
+  (function () {
+    const cells = document.querySelectorAll('#numberline1 .cell');
+    const pawn = document.createElement('div');
+    pawn.className = 'pawn';
+    pawn.textContent = '🧍‍♂️';
+
+    let position = 0;
+    let currentPlayer = 'Romulus';
+    let gameOver = false;
+
+    function placePawn() {
+      const index = position + 10;
+      const cell = cells[index];
+      if (cell) {
+        cell.appendChild(pawn);
+        pawn.style.left = '50%';
+        pawn.style.transform = 'translate(-50%, -6px)';
+      }
+    }
+
+    function setStatus(text, winner) {
+      const sm = document.getElementById('status-main1');
+      sm.textContent = text;
+      sm.classList.remove('highlight-romulus', 'highlight-remus');
+      if (winner === 'Romulus') sm.classList.add('highlight-romulus');
+      if (winner === 'Remus') sm.classList.add('highlight-remus');
+    }
+
+    function randomDir() {
+      return Math.random() < 0.5 ? '+' : '-';
+    }
+
+    function roll() {
+      if (gameOver) return;
+      const diceNum = document.getElementById('dice-number1');
+      const diceDir = document.getElementById('dice-dir1');
+
+      const num = 1 + Math.floor(Math.random() * 6);
+      const dir = randomDir();
+      diceNum.textContent = num;
+      diceDir.textContent = dir;
+
+      let delta = dir === '+' ? num : -num;
+      position += delta;
+
+      if (position <= -10) {
+        position = -10;
+        placePawn();
+        gameOver = true;
+        setStatus('Romulus nyert! A bábu a bal oldali kék mező fölé került.', 'Romulus');
+        return;
+      }
+      if (position >= 10) {
+        position = 10;
+        placePawn();
+        gameOver = true;
+        setStatus('Remus nyert! A bábu a jobb oldali piros mező fölé került.', 'Remus');
+        return;
+      }
+
+      placePawn();
+      currentPlayer = currentPlayer === 'Romulus' ? 'Remus' : 'Romulus';
+      setStatus(`Most ${currentPlayer} következik. Kattints a „Dobj!” gombra!`);
+      document.getElementById('status-small1').textContent =
+        'Figyeld meg, hogyan változik a bábu helye a számegyenesen!';
+    }
+
+    function resetGame() {
+      position = 0;
+      currentPlayer = 'Romulus';
+      gameOver = false;
+      document.getElementById('dice-number1').textContent = '?';
+      document.getElementById('dice-dir1').textContent = '?';
+      setStatus('Romulus kezd. Kattints a „Dobj!” gombra.');
+      document.getElementById('status-small1').textContent =
+        'A bábu automatikusan a megfelelő mezőre ugrik.';
+      placePawn();
+    }
+
+    document.getElementById('rollBtn1').addEventListener('click', roll);
+    document.getElementById('resetBtn1').addEventListener('click', resetGame);
+
+    placePawn();
+  })();
+
+  /* ===== 2. SZINT – húzd a bábut, jobbra/balra szöveg ===== */
+  (function () {
+    const cells = document.querySelectorAll('#numberline2 .cell');
+    const pawn = document.createElement('div');
+    pawn.className = 'pawn';
+    pawn.textContent = '🧍‍♂️';
+
+    let position = 0;
+    let targetPosition = null;
+    let currentPlayer = 'Romulus';
+    let gameOver = false;
+    let waitingForMove = false;
+    let mistakesThisTurn = 0;
+
+    function placePawnAt(pos) {
+      const index = pos + 10;
+      const cell = cells[index];
+      if (cell) {
+        cell.appendChild(pawn);
+        pawn.style.left = '50%';
+        pawn.style.transform = 'translate(-50%, -6px)';
+      }
+    }
+
+    function setStatusMain(text, hl) {
+      const sm = document.getElementById('status-main2');
+      sm.textContent = text;
+      sm.classList.remove('highlight-romulus', 'highlight-remus');
+      if (hl === 'Romulus') sm.classList.add('highlight-romulus');
+      if (hl === 'Remus') sm.classList.add('highlight-remus');
+    }
+
+    function randomDir() {
+      return Math.random() < 0.5 ? '+' : '-';
+    }
+
+    function roll() {
+      if (gameOver) return;
+      if (waitingForMove) {
+        setStatusMain('Előbb tedd a bábut a megfelelő mezőre!', currentPlayer);
+        return;
+      }
+
+      const diceNum = document.getElementById('dice-number2');
+      const diceDir = document.getElementById('dice-dir2');
+
+      const num = 1 + Math.floor(Math.random() * 6);
+      const dir = randomDir();
+      diceNum.textContent = num;
+      diceDir.textContent = dir;
+
+      const irany = dir === '+' ? 'jobbra' : 'balra';
+      let delta = dir === '+' ? num : -num;
+      let tempPos = position + delta;
+      if (tempPos < -10) tempPos = -10;
+      if (tempPos > 10) tempPos = 10;
+
+      targetPosition = tempPos;
+      waitingForMove = true;
+      mistakesThisTurn = 0;
+
+      setStatusMain(
+        `${currentPlayer} dobott: lépjen ${irany} ${num}-at!`,
+        currentPlayer
+      );
+      document.getElementById('status-small2').textContent =
+        'Kattints arra a mezőre, ahová szerinted a bábu kerül. Három próbálkozásod van.';
+    }
+
+    function finishTurnAndCheckWin() {
+      if (position <= -10) {
+        position = -10;
+        placePawnAt(position);
+        gameOver = true;
+        setStatusMain(
+          'Romulus nyert! A bábu a bal oldali kék mező fölé került.',
+          'Romulus'
+        );
+        document.getElementById('status-small2').textContent =
+          'Kattints az „Új játék” gombra, ha szeretnél újra játszani.';
+        return true;
+      }
+      if (position >= 10) {
+        position = 10;
+        placePawnAt(position);
+        gameOver = true;
+        setStatusMain(
+          'Remus nyert! A bábu a jobb oldali piros mező fölé került.',
+          'Remus'
+        );
+        document.getElementById('status-small2').textContent =
+          'Kattints az „Új játék” gombra, ha szeretnél újra játszani.';
+        return true;
+      }
+      return false;
+    }
+
+    function cellClick(e) {
+      if (gameOver || !waitingForMove) return;
+
+      const cell = e.currentTarget;
+      const selectedPos = parseInt(cell.getAttribute('data-pos'), 10);
+      placePawnAt(selectedPos);
+
+      if (selectedPos === targetPosition) {
+        position = targetPosition;
+        waitingForMove = false;
+        setStatusMain(
+          `Ügyes vagy, ${currentPlayer} jól lépett! A bábu most a(z) ${position} mezőn áll.`,
+          currentPlayer
+        );
+        document.getElementById('status-small2').textContent =
+          'Kattints a „Dobj!” gombra a következő játékos lépéséhez.';
+
+        if (!finishTurnAndCheckWin()) {
+          currentPlayer = currentPlayer === 'Romulus' ? 'Remus' : 'Romulus';
+          setStatusMain(
+            `Most ${currentPlayer} következik. Kattints a „Dobj!” gombra!`,
+            currentPlayer
+          );
+        }
+      } else {
+        mistakesThisTurn++;
+        if (mistakesThisTurn < 3) {
+          setStatusMain(
+            `Ez most nem pontos, ${currentPlayer}! Próbáld meg újra (${mistakesThisTurn}. próbálkozás).`,
+            currentPlayer
+          );
+          document.getElementById('status-small2').textContent =
+            'Gondold végig: honnan indult a bábu, merre és hányat kellett lépni?';
+        } else {
+          waitingForMove = false;
+          position = targetPosition;
+          placePawnAt(position);
+          setStatusMain(
+            `Most megmutatom a helyes mezőt: ide kellett lépni (${position}).`,
+            currentPlayer
+          );
+          document.getElementById('status-small2').textContent =
+            'Következő körben figyeld meg alaposan a dobást, és próbálkozz újra!';
+
+          if (!finishTurnAndCheckWin()) {
+            currentPlayer = currentPlayer === 'Romulus' ? 'Remus' : 'Romulus';
+            setStatusMain(
+              `Most ${currentPlayer} következik. Kattints a „Dobj!” gombra!`,
+              currentPlayer
+            );
+          }
+        }
+      }
+    }
+
+    function resetGame() {
+      position = 0;
+      targetPosition = null;
+      currentPlayer = 'Romulus';
+      gameOver = false;
+      waitingForMove = false;
+      mistakesThisTurn = 0;
+      document.getElementById('dice-number2').textContent = '?';
+      document.getElementById('dice-dir2').textContent = '?';
+      setStatusMain('Romulus következik. Kattints a „Dobj!” gombra.', 'Romulus');
+      document.getElementById('status-small2').textContent =
+        'A feladat: „lépjen jobbra/balra …-at”. Kattints a megfelelő mezőre!';
+      placePawnAt(position);
+    }
+
+    cells.forEach(c => c.addEventListener('click', cellClick));
+    document.getElementById('rollBtn2').addEventListener('click', roll);
+    document.getElementById('resetBtn2').addEventListener('click', resetGame);
+
+    placePawnAt(position);
+  })();
+
+  /* ===== 3. SZINT – húzd a bábut, lépjen +3 / –5 ===== */
+  (function () {
+    const cells = document.querySelectorAll('#numberline3 .cell');
+    const pawn = document.createElement('div');
+    pawn.className = 'pawn';
+    pawn.textContent = '🧍‍♂️';
+
+    let position = 0;
+    let targetPosition = null;
+    let currentPlayer = 'Romulus';
+    let gameOver = false;
+    let waitingForMove = false;
+    let mistakesThisTurn = 0;
+
+    function placePawnAt(pos) {
+      const index = pos + 10;
+      const cell = cells[index];
+      if (cell) {
+        cell.appendChild(pawn);
+        pawn.style.left = '50%';
+        pawn.style.transform = 'translate(-50%, -6px)';
+      }
+    }
+
+    function setStatusMain(text, hl) {
+      const sm = document.getElementById('status-main3');
+      sm.textContent = text;
+      sm.classList.remove('highlight-romulus', 'highlight-remus');
+      if (hl === 'Romulus') sm.classList.add('highlight-romulus');
+      if (hl === 'Remus') sm.classList.add('highlight-remus');
+    }
+
+    function randomDir() {
+      return Math.random() < 0.5 ? '+' : '-';
+    }
+
+    function roll() {
+      if (gameOver) return;
+      if (waitingForMove) {
+        setStatusMain('Előbb tedd a bábut a megfelelő mezőre!', currentPlayer);
+        return;
+      }
+
+      const diceNum = document.getElementById('dice-number3');
+      const diceDir = document.getElementById('dice-dir3');
+
+      const num = 1 + Math.floor(Math.random() * 6);
+      const dir = randomDir();
+      diceNum.textContent = num;
+      diceDir.textContent = dir;
+
+      let delta = dir === '+' ? num : -num;
+      let tempPos = position + delta;
+      if (tempPos < -10) tempPos = -10;
+      if (tempPos > 10) tempPos = 10;
+
+      targetPosition = tempPos;
+      waitingForMove = true;
+      mistakesThisTurn = 0;
+
+      const jelzett = (delta > 0 ? '+' : '') + delta;
+      setStatusMain(
+        `${currentPlayer} dobott: lépjen ${jelzett}-at!`,
+        currentPlayer
+      );
+      document.getElementById('status-small3').textContent =
+        'Kattints arra a mezőre, ahová szerinted a bábu kerül. Három próbálkozásod van.';
+    }
+
+    function finishTurnAndCheckWin() {
+      if (position <= -10) {
+        position = -10;
+        placePawnAt(position);
+        gameOver = true;
+        setStatusMain(
+          'Romulus nyert! A bábu a bal oldali kék mező fölé került.',
+          'Romulus'
+        );
+        document.getElementById('status-small3').textContent =
+          'Kattints az „Új játék” gombra, ha szeretnél újra játszani.';
+        return true;
+      }
+      if (position >= 10) {
+        position = 10;
+        placePawnAt(position);
+        gameOver = true;
+        setStatusMain(
+          'Remus nyert! A bábu a jobb oldali piros mező fölé került.',
+          'Remus'
+        );
+        document.getElementById('status-small3').textContent =
+          'Kattints az „Új játék” gombra, ha szeretnél újra játszani.';
+        return true;
+      }
+      return false;
+    }
+
+    function cellClick(e) {
+      if (gameOver || !waitingForMove) return;
+
+      const cell = e.currentTarget;
+      const selectedPos = parseInt(cell.getAttribute('data-pos'), 10);
+      placePawnAt(selectedPos);
+
+      if (selectedPos === targetPosition) {
+        position = targetPosition;
+        waitingForMove = false;
+        setStatusMain(
+          `Ügyes vagy, ${currentPlayer}! A bábu most a(z) ${position} mezőn áll.`,
+          currentPlayer
+        );
+        document.getElementById('status-small3').textContent =
+          'Kattints a „Dobj!” gombra a következő játékos lépéséhez.';
+
+        if (!finishTurnAndCheckWin()) {
+          currentPlayer = currentPlayer === 'Romulus' ? 'Remus' : 'Romulus';
+          setStatusMain(
+            `Most ${currentPlayer} következik. Kattints a „Dobj!” gombra!`,
+            currentPlayer
+          );
+        }
+      } else {
+        mistakesThisTurn++;
+        if (mistakesThisTurn < 3) {
+          setStatusMain(
+            `Ez most nem jó helyre került, ${currentPlayer}! (${mistakesThisTurn}. próbálkozás)`,
+            currentPlayer
+          );
+          document.getElementById('status-small3').textContent =
+            'Gondold végig: honnan indult a bábu, és mennyit lép + vagy – irányban!';
+        } else {
+          waitingForMove = false;
+          position = targetPosition;
+          placePawnAt(position);
+          setStatusMain(
+            `Most megmutatom a helyes mezőt: ide kellett lépni (${position}).`,
+            currentPlayer
+          );
+          document.getElementById('status-small3').textContent =
+            'Következő körben próbáld meg önállóan kiszámolni a + és – lépéseket!';
+
+          if (!finishTurnAndCheckWin()) {
+            currentPlayer = currentPlayer === 'Romulus' ? 'Remus' : 'Romulus';
+            setStatusMain(
+              `Most ${currentPlayer} következik. Kattints a „Dobj!” gombra!`,
+              currentPlayer
+            );
+          }
+        }
+      }
+    }
+
+    function resetGame() {
+      position = 0;
+      targetPosition = null;
+      currentPlayer = 'Romulus';
+      gameOver = false;
+      waitingForMove = false;
+      mistakesThisTurn = 0;
+      document.getElementById('dice-number3').textContent = '?';
+      document.getElementById('dice-dir3').textContent = '?';
+      setStatusMain('Romulus következik. Kattints a „Dobj!” gombra.', 'Romulus');
+      document.getElementById('status-small3').textContent =
+        'A feladat: „lépjen +… / –…”. Kattints a megfelelő mezőre!';
+      placePawnAt(position);
+    }
+
+    cells.forEach(c => c.addEventListener('click', cellClick));
+    document.getElementById('rollBtn3').addEventListener('click', roll);
+    document.getElementById('resetBtn3').addEventListener('click', resetGame);
+
+    placePawnAt(position);
+  })();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
